@@ -291,4 +291,4 @@ datatodb = mp.Process(target=data_to_db)
 datatodb.start()
 
 # e.g.: curl http://jmfi246.cs.uky.edu:9000/api/getteams
-app.run(port=9000)
+app.run(host="0.0.0.0", port=9000)
