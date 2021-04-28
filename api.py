@@ -2,6 +2,9 @@
 # api.py
 # Functions for APIs defined in assignment
 
+import util
+import pyorient
+
 # ========================================
 # MANAGEMENT FUNCTION APIS
 # ========================================
@@ -12,10 +15,12 @@
 '''
 E.g.:   {
         "team_name": "LegoManics",
-        "Team_members_sids": ["12345678", "87654321"], 
+        "Team_members_sids": ["12345678", "87654321"],
         "app_status_code": "1"
         }
 '''
+
+
 def getteam():
     raise NotImplementedError
 
@@ -65,13 +70,57 @@ def testcount():
 # API to search by mrn patient location (home or hospital)
 # Return: mrn: medical record number
 #         location_code: 0 for home, -1 for no assignment, or hospital ID
-# E.g.:   {"mrn": "024c60d2-a1eb-498d-8739-02587ade42ac", "location_code": "11740202" }
-def getpatient(mrn):
-    raise NotImplementedError
+# E.g.:   {"mrn": "024c60d2-a1eb-498d-8739-02587ade42ac", "location_code":
+# "11740202" }
+def OF2(mrn):
+    name = "COVID-19-Report"
+    # database login
+    login = 'root'
+    # password
+    password = 'rootpwd'
+    # Use pyorient to connect to our local orientdb docker container
+    client = pyorient.OrientDB("localhost", 2424)
+    session_id = client.connect(login, password)
+
+    # open the database
+    client.db_open(name, login, password)
+
+    data = client.query(
+        "SELECT location_code FROM patient WHERE mrn = \"" +
+        mrn +
+        "\"")
+    client.close()
+    if len(data) != 0:
+        location_code = str(data[0].oRecordData['location_code'])
+        return location_code
+    else:
+        return "Some Error we should at least get -1"
 
 
 # /api/gethospital{id}
 # API to report hospital patient numbers
 # E.g.:   { "total_beds": "404", "avalable_beds": "200", "zipcode": "40202", }
-def gethospital(id):
-    raise NotImplementedError
+def OF3(id):
+    name = "COVID-19-Report"
+    # database login
+    login = 'root'
+    # password
+    password = 'rootpwd'
+    # Use pyorient to connect to our local orientdb docker container
+    client = pyorient.OrientDB("localhost", 2424)
+    session_id = client.connect(login, password)
+
+    # open the database
+    client.db_open(name, login, password)
+
+    # query the hospital database with given hospital id and return the details
+    data = client.query("SELECT * FROM hospital WHERE id = \"" + id + "\"")
+    client.close()
+    if len(data) == 1:
+        total_beds = str(data[0].oRecordData['total_beds'])
+        avalable_beds = str(data[0].oRecordData['avalable_beds'])
+        zipcode = str(data[0].oRecordData['zipcode'])
+        hospital_data = [total_beds, avalable_beds, zipcode]
+        return hospital_data
+    else:
+        return ["NA", "NA", "NA"]
