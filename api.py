@@ -4,8 +4,7 @@
 
 import util
 import pyorient
-from flask import Flask
-
+from flask import Flask, jsonify
 from DBLauncher import reset_db
 
 app = Flask(__name__)
@@ -70,7 +69,7 @@ def zipalertlist():
     client.close()
 
     alert_zips = (zipcode.oRecordData['zipcode'] for zipcode in query_zipcodes)
-    return flask.jsonify(alert_zips)
+    return jsonify(alert_zips)
 
 
 # /api/alertlist
