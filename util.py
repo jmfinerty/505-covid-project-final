@@ -2,7 +2,7 @@
 # Functions to be utilized by other functions
 
 import pyorient
-import pandas as pd
+from pandas import read_csv
 
 patient_status_map = {
     0: "no symptoms, untested",
@@ -78,23 +78,17 @@ def read_patients_data(client, data):
 
 
 def read_hospital_data():
-    # Name our database
     name = 'COVID-19-Report'
-    # database login
     login = 'root'
-    # password
     password = 'rootpwd'
 
-    # Use pyorient to connect to our local orientdb docker container
     client = pyorient.OrientDB("localhost", 2424)
     session_id = client.connect(login, password)
-
-    # open the database we are interested in
     client.db_open(name, login, password)
 
     # Now populate the hospital database with initialization total_beds ==
     # avalable_beds
-    hospital_data = pd.read_csv(hospital_filepath)
+    hospital_data = read_csv(hospital_filepath)
     for i in range(len(hospital_data)):
         name = hospital_data.iloc[i]['NAME'].item()
         id = hospital_data.iloc[i]['ID'].item()
@@ -164,7 +158,7 @@ def findHospital(client, mrn, zipcode, patient_status_code):
 
 
 def findBestHospital(zipcode, feasible_hospitals):
-    distance_df = pd.read_csv(distance_filepath)
+    distance_df = read_csv(distance_filepath)
     dist = []
     for hospital in feasible_hospitals:
         hospital_zip = int(hospital.oRecordData['zipcode'])

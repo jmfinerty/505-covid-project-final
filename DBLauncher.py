@@ -2,7 +2,6 @@ import pyorient
 import json
 import re
 import logging
-import pandas as pd
 
 # Adapted from https://github.com/codybum/genparse/blob/master/DBTools.py
 
@@ -10,10 +9,9 @@ import pandas as pd
 def reset_db():
 
     name = "COVID-19-Report"
-    # database login
     login = 'root'
-    # password
     password = 'rootpwd'
+
     # Use pyorient to connect to our local orientdb docker container
     client = pyorient.OrientDB("localhost", 2424)
     session_id = client.connect(login, password)
