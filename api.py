@@ -124,8 +124,11 @@ def zipalertlist():
         "select z from zipcodes where positive_test > 2*last_count")
     client.close()
 
-    alert_zips = (zipcode.oRecordData['zipcode'] for zipcode in query_zipcodes)
-    return jsonify(alert_zips)
+    alert_zips = [].append(zipcode.oRecordData['zipcode']
+                           for zipcode in query_zipcodes)
+    if not alert_zips:
+        return {"ziplist": []}
+    return {"ziplist": alert_zips}
 
 
 # /api/alertlist
