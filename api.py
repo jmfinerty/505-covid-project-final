@@ -7,7 +7,7 @@ import pika
 import json
 import sys
 import multiprocessing as mp
-from flask import Flask, jsonify
+from flask import Flask
 from util import read_hospital_data, read_patients_data
 from DBLauncher import reset_db, load_db
 
@@ -121,7 +121,7 @@ def zipalertlist():
     client.db_open(name, login, password)
 
     query_zipcodes = client.query(
-        "select z from zipcodes where positive_test > 2*last_count")
+        "select z from zipcodes where positive_test > 2*last_test")
     client.close()
 
     alert_zips = [].append(zipcode.oRecordData['zipcode']
