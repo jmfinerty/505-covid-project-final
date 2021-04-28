@@ -38,6 +38,8 @@ def update_state_alert():
             client.query("select z from zipcodes where positive_test > 2*last_test"))
         if num_zips_alerted >= 5:
             client.command("UPDATE zipcodes SET state_status = 1")
+        # last_test of prev. 15s window
+        client.command("UPDATE zipcodes SET last_test = positive_test")
         client.close()
         t1 = time()
 
