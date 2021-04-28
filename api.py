@@ -10,6 +10,7 @@ import multiprocessing as mp
 from flask import Flask
 from util import read_hospital_data, read_patients_data
 from DBLauncher import reset_db, load_db
+from time import time
 
 
 app = Flask(__name__)
@@ -22,6 +23,20 @@ password = 'rootpwd'
 # @app.route('/')
 # def testapi():
 #    return 'TestAPI'
+
+t1 = time()
+def update_state_alert():
+    global t1
+    t2 = time()
+    if t2 - t1 > 15:
+        client = pyorient.OrientDB("localhost", 2424)
+        session_id = client.connect(login, password)
+        client.db_open(name, login, password)
+        num_zips_alerted = len(client.query("select z from zipcodes where positive_test > 2*last_test"))
+        if num_zips_alerted >= 5:
+            client.command("UPDATE zipcodes SET state_status = 1")
+        client.close()
+        t1 = time()        
 
 
 def subscriber():
@@ -72,6 +87,7 @@ def data_to_db():
             data = q.get(0)
             # print("\n\n\n\n\n",data)
             read_patients_data(client, data)
+        update_state_alert()
 
 
 # ========================================
@@ -124,11 +140,10 @@ def zipalertlist():
         "select z from zipcodes where positive_test > 2*last_test")
     client.close()
 
-    alert_zips = [].append(zipcode.oRecordData['zipcode']
-                           for zipcode in query_zipcodes)
+    alert_zips = [].append(zipcode.oRecordData['zipcode'] for zipcode in query_zipcodes)
     if not alert_zips:
-        return {"ziplist": []}
-    return {"ziplist": alert_zips}
+        return {"ziplist":[]}
+    return {"ziplist":alert_zips}
 
 
 # /api/alertlist
@@ -144,7 +159,12 @@ def alertlist():
     query_state_status = client.query("select state_status from zipcodes")
     client.close()
 
-    state_status = query_state_status[0].oRecordData['state_status']
+    state_status = '0'
+    if query_state_status:
+        try:
+            state_status = str(query_state_status[0].oRecordData['state_status'])
+        except KeyError: # state status not yet set
+            state_status = '0'
     return {"state_status": state_status}
 
 
