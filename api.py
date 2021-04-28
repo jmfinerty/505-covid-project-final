@@ -25,6 +25,8 @@ password = 'rootpwd'
 #    return 'TestAPI'
 
 t1 = time()
+
+
 def update_state_alert():
     global t1
     t2 = time()
@@ -32,11 +34,12 @@ def update_state_alert():
         client = pyorient.OrientDB("localhost", 2424)
         session_id = client.connect(login, password)
         client.db_open(name, login, password)
-        num_zips_alerted = len(client.query("select z from zipcodes where positive_test > 2*last_test"))
+        num_zips_alerted = len(
+            client.query("select z from zipcodes where positive_test > 2*last_test"))
         if num_zips_alerted >= 5:
             client.command("UPDATE zipcodes SET state_status = 1")
         client.close()
-        t1 = time()        
+        t1 = time()
 
 
 def subscriber():
@@ -137,13 +140,14 @@ def zipalertlist():
     client.db_open(name, login, password)
 
     query_zipcodes = client.query(
-        "select z from zipcodes where positive_test > 2*last_test")
+        "select * from zipcodes where positive_test > 2*last_test")
     client.close()
 
-    alert_zips = [].append(zipcode.oRecordData['zipcode'] for zipcode in query_zipcodes)
-    if not alert_zips:
-        return {"ziplist":[]}
-    return {"ziplist":alert_zips}
+    #alert_zips = [].append(zipcode.oRecordData['zipcode'] for zipcode in query_zipcodes)
+    alert_zips = []
+    for zipcode in query_zipcodes:
+        alert_zips.append(str(zipcode.oRecordData['zipcode']))
+    return {"ziplist": alert_zips}
 
 
 # /api/alertlist
@@ -162,8 +166,9 @@ def alertlist():
     state_status = '0'
     if query_state_status:
         try:
-            state_status = str(query_state_status[0].oRecordData['state_status'])
-        except KeyError: # state status not yet set
+            state_status = str(
+                query_state_status[0].oRecordData['state_status'])
+        except KeyError:  # state status not yet set
             state_status = '0'
     return {"state_status": state_status}
 
