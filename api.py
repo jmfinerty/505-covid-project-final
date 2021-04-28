@@ -2,12 +2,18 @@
 # api.py
 # Functions for APIs defined in assignment
 
-import util
 import pyorient
+import pika
+import json
+import sys
+import multiprocessing as mp
 from flask import Flask, jsonify
-from DBLauncher import reset_db
+from util import read_hospital_data, read_patients_data
+from DBLauncher import reset_db, load_db
+
 
 app = Flask(__name__)
+q = mp.Queue()
 
 name = "COVID-19-Report"
 login = 'root'
@@ -16,6 +22,56 @@ password = 'rootpwd'
 # @app.route('/')
 # def testapi():
 #    return 'TestAPI'
+
+
+def subscriber():
+
+    username = 'student'
+    password = 'student01'
+    hostname = '128.163.202.50'
+    virtualhost = '9'
+
+    # CODE PARTIALLY SOURCED FROM EXAMPLE CODE GIVEN IN ASSIGNMENT
+    credentials = pika.PlainCredentials(username, password)
+    parameters = pika.ConnectionParameters(hostname,
+                                           5672,
+                                           virtualhost,
+                                           credentials)
+    connection = pika.BlockingConnection(parameters)
+    channel = connection.channel()
+    exchange_name = 'patient_data'
+
+    channel.exchange_declare(exchange=exchange_name, exchange_type='topic')
+    result = channel.queue_declare('', exclusive=True)
+    queue_name = result.method.queue
+
+    binding_keys = "#"
+    if not binding_keys:
+        sys.stderr.write("Usage: %s [binding_key]...\n" % sys.argv[0])
+        sys.exit(1)
+    for binding_key in binding_keys:
+        channel.queue_bind(
+            exchange=exchange_name, queue=queue_name, routing_key=binding_key)
+
+    def callback(ch, method, properties, body):
+        #print(" [x] %r:%r" % (method.routing_key, body))
+        q.put(json.loads(body))
+        # print(json.loads(body))
+
+    channel.basic_consume(
+        queue=queue_name, on_message_callback=callback, auto_ack=True)
+    channel.start_consuming()
+
+
+def data_to_db():
+    client = pyorient.OrientDB("localhost", 2424)
+    session_id = client.connect(login, password)
+    client.db_open(name, login, password)
+    while True:
+        if not q.empty():
+            data = q.get(0)
+            # print("\n\n\n\n\n",data)
+            read_patients_data(client, data)
 
 
 # ========================================
@@ -35,8 +91,8 @@ def getteam():
     return {
         'team_name': 'KhanalFinerty',
         'Team_members_sids': (
-            '12307438',
-            'SUBASHID'),
+            '12331124',
+            '12307438'),
         'app_status_code': '0'}
 
 
@@ -145,7 +201,7 @@ def getpatient(mrn):
 # API to report hospital patient numbers
 # E.g.:   { "total_beds": "404", "avalable_beds": "200", "zipcode": "40202", }
 @app.route('/api/gethospital/<string:id>', methods=['GET'])
-def OF3(id):
+def gethospital(id):
     client = pyorient.OrientDB("localhost", 2424)
     session_id = client.connect(login, password)
     client.db_open(name, login, password)
@@ -167,4 +223,9 @@ def OF3(id):
         "zipcode": zipcode}
 
 
-app.run()
+load_db()
+read_hospital_data()
+mp.Process(target=subscriber).start()  # rabbit
+mp.Process(target=data_to_db).start()
+
+app.run(port=9000)

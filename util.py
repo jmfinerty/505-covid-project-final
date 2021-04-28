@@ -39,8 +39,8 @@ distance_filepath = 'kyzipdistance.csv'
 def read_patients_data(client, data):
     for item in data:
         mrn = item["mrn"]
-        zipcode = item["zipcode"]
-        patient_status_code = item["patient"]
+        zipcode = item["zip_code"]
+        patient_status_code = item["patient_status_code"]
         location_code = -1
         client.command(
             "CREATE VERTEX patient SET mrn = \"" +
@@ -90,34 +90,65 @@ def read_hospital_data():
     # avalable_beds
     hospital_data = read_csv(hospital_filepath)
     for i in range(len(hospital_data)):
-        name = hospital_data.iloc[i]['NAME'].item()
+        name = hospital_data.iloc[i]['NAME']
         id = hospital_data.iloc[i]['ID'].item()
         zipcode = hospital_data.iloc[i]['ZIP'].item()
-        level = hospital_data.iloc[i]['TRAUMA'].item()
+        level = hospital_data.iloc[i]['TRAUMA']
         total_beds = hospital_data.iloc[i]['BEDS'].item()
         avalable_beds = total_beds  # Initially total beds == avalable beds
         state = "KY"  # Would be useful if we have to scale the DBMS to National scale
         client.command(
             "CREATE VERTEX hospital SET id = \"" +
-            id +
+            str(id) +
             "\", name = \"" +
             str(name) +
             "\", state = \"" +
             state +
             "\", zipcode = \"" +
-            zipcode +
+            str(zipcode) +
             "\", level = \"" +
-            level +
+            str(level) +
             "\", total_beds = \"" +
-            total_beds +
+            str(total_beds) +
             "\", avalable_beds = \"" +
-            avalable_beds +
+            str(avalable_beds) +
             "\"")
+
+    distance_df = read_csv(distance_filepath)
+    for zip_from in set(distance_df['zip_from']):
+        client.command(
+            "CREATE VERTEX zipcodes SET zipcode = \"" +
+            str(zip_from) +
+            "\", positive_test = 1, last_test = 0,"
+            " ziplist = ' ', statealert = 0")
+
+    for zip_from in set(distance_df['zip_from']):
+        zip_from_rows = distance_df[distance_df['zip_from'] == int(zip_from)]
+
+        zips_to = zip_from_rows['zip_to']
+        zips_to_string = "[" + ", ".join(str(z) for z in zips_to) + "]"
+
+        client.command(
+            "create edge from " +
+            "(select * from zipcodes where zipcode = " + str(zip_from) + ")" +
+            " to " +
+            "(select * from zipcodes where zipcode in " + zips_to_string + ")"
+        )
+
+    '''pathlist = client.command(
+        "SELECT shortestPath(" +
+        "(select * from zipcodes where zipcode = 40362)" +
+        ", " +
+        "(select * from zipcodes where zipcode = 40831)" +
+        ")")
+    print(pathlist[0].__getattr__('shortestPath'))'''
 
 
 def findHospital(client, mrn, zipcode, patient_status_code):
 
     location_code = "-1"  # For no assignment
+
+    print(mrn)
 
     if int(patient_status_code) in report_hospital or int(
             patient_status_code) in report_hospital_urgent:
@@ -125,7 +156,7 @@ def findHospital(client, mrn, zipcode, patient_status_code):
         if int(patient_status_code) in report_hospital_urgent:
             feasible_hospitals = client.command(
                 "SELECT * FROM hospital WHERE avalable_beds > 0" +
-                "\" AND level = 'LEVEL IV'")
+                " AND level = 'LEVEL IV'")
             # IF NO LEVEL 4 Hospital found select at least normal hospital with
             # available beds
             if len(feasible_hospitals) == 0:
@@ -162,9 +193,52 @@ def findBestHospital(zipcode, feasible_hospitals):
     dist = []
     for hospital in feasible_hospitals:
         hospital_zip = int(hospital.oRecordData['zipcode'])
+        if len(feasible_hospitals) == 1:
+            temp = float(distance_df[(distance_df['zip_from'] == int(zipcode)) & (
+                distance_df['zip_to'] == int(hospital_zip))]['distance'])
+        elif len(feasible_hospitals) > 1:
+            temp = float(distance_df[(distance_df['zip_from'] == int(zipcode)) & (
+                distance_df['zip_to'] == int(hospital_zip))]['distance'].item())
+        dist.append(temp)
+    index_min = min(range(len(dist)), key=dist.__getitem__)
+
+    return feasible_hospitals[index_min]
+
+'''
+def findBestHospital(zipcode, feasible_hospitals):
+    distance_df = read_csv(distance_filepath)
+    dist = []
+    for hospital in feasible_hospitals:
+        hospital_zip = int(hospital.oRecordData['zipcode'])
         temp = float(distance_df[(distance_df['zip_from'] == int(zipcode)) & (
             distance_df['zip_to'] == int(hospital_zip))]['distance'].item())
         dist.append(temp)
     index_min = min(range(len(dist)), key=dist.__getitem__)
 
     return feasible_hospitals[index_min]
+'''
+
+
+'''
+def findBestHospital(zipcode, feasible_hospitals):
+    distance_df = read_csv(distance_filepath)
+    dist = []
+    count = 1
+    for hospital in feasible_hospitals:
+        hospital_zip = int(hospital.oRecordData['zipcode'])
+        print(hospital_zip, zipcode, len(feasible_hospitals), count)
+        if len(feasible_hospitals) == 1:
+            temp = float(distance_df[(distance_df['zip_from'] == int(zipcode)) & (
+                distance_df['zip_to'] == int(hospital_zip))]['distance'])
+        elif len(feasible_hospitals) > 1:
+            print("ddf",distance_df[(distance_df['zip_from'] == int(zipcode)) & (
+                distance_df['zip_to'] == int(hospital_zip))]['distance'])
+            temp = float(distance_df[(distance_df['zip_from'] == int(zipcode)) & (
+                distance_df['zip_to'] == int(hospital_zip))]['distance'].item())
+        dist.append(temp)
+        count += 1
+    index_min = min(range(len(dist)), key=dist.__getitem__)
+    print('\n')
+
+    return feasible_hospitals[index_min]
+    '''

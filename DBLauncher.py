@@ -22,13 +22,14 @@ def reset_db():
         client.db_drop(name)
         logging.info(name, "Database Reset")
         status = 1
-    else:
-        # Create New Database
-        client.db_create(name,
-                         pyorient.DB_TYPE_GRAPH,
-                         pyorient.STORAGE_TYPE_PLOCAL)
-        logging.info(name, "New Database created")
-        status = 1
+
+    # Create New Database
+    client.db_create(name,
+                     pyorient.DB_TYPE_GRAPH,
+                     pyorient.STORAGE_TYPE_PLOCAL)
+    logging.info(name, "New Database created")
+    status = 1
+
     return status
 
 
