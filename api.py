@@ -56,7 +56,7 @@ def subscriber():
     def callback(ch, method, properties, body):
         #print(" [x] %r:%r" % (method.routing_key, body))
         q.put(json.loads(body))
-        # print(json.loads(body))
+        print(json.loads(body))
 
     channel.basic_consume(
         queue=queue_name, on_message_callback=callback, auto_ack=True)
@@ -155,9 +155,9 @@ def testcount():
     client.db_open(name, login, password)
 
     query_positive = client.query(
-        "select count(*) from patient where patient_status_code in (2, 5, 6)")
+        "select count(*) from patient where patient_status_code in [2, 5, 6]")
     query_negative = client.query(
-        "select count(*) from patient where patient_status_code in (1, 4)")
+        "select count(*) from patient where patient_status_code in [1, 4]")
     client.close()
 
     positive_test_count = query_positive[0].oRecordData['count']
