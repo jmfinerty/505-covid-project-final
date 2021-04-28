@@ -2,6 +2,7 @@
 # Functions to be utilized by other functions
 
 import pyorient
+from random import choice
 from pandas import read_csv
 
 patient_status_map = {
@@ -114,7 +115,7 @@ def read_hospital_data():
             str(avalable_beds) +
             "\"")
 
-    distance_df = read_csv(distance_filepath)
+    '''distance_df = read_csv(distance_filepath)
     for zip_from in set(distance_df['zip_from']):
         client.command(
             "CREATE VERTEX zipcodes SET zipcode = \"" +
@@ -133,7 +134,7 @@ def read_hospital_data():
             "(select * from zipcodes where zipcode = " + str(zip_from) + ")" +
             " to " +
             "(select * from zipcodes where zipcode in " + zips_to_string + ")"
-        )
+        )'''
 
     '''pathlist = client.command(
         "SELECT shortestPath(" +
@@ -147,8 +148,6 @@ def read_hospital_data():
 def findHospital(client, mrn, zipcode, patient_status_code):
 
     location_code = "-1"  # For no assignment
-
-    print(mrn)
 
     if int(patient_status_code) in report_hospital or int(
             patient_status_code) in report_hospital_urgent:
@@ -189,34 +188,34 @@ def findHospital(client, mrn, zipcode, patient_status_code):
 
 
 def findBestHospital(zipcode, feasible_hospitals):
+
     distance_df = read_csv(distance_filepath)
     dist = []
+
     for hospital in feasible_hospitals:
         hospital_zip = int(hospital.oRecordData['zipcode'])
-        if len(feasible_hospitals) == 1:
-            temp = float(distance_df[(distance_df['zip_from'] == int(zipcode)) & (
-                distance_df['zip_to'] == int(hospital_zip))]['distance'])
-        elif len(feasible_hospitals) > 1:
-            temp = float(distance_df[(distance_df['zip_from'] == int(zipcode)) & (
-                distance_df['zip_to'] == int(hospital_zip))]['distance'].item())
-        dist.append(temp)
-    index_min = min(range(len(dist)), key=dist.__getitem__)
+
+        try:
+            if len(feasible_hospitals) == 1:
+                temp = float(distance_df[(distance_df['zip_from'] == int(zipcode)) & (
+                    distance_df['zip_to'] == int(hospital_zip))]['distance'])
+            elif len(feasible_hospitals) > 1:
+                temp = float(distance_df[(distance_df['zip_from'] == int(zipcode)) & (
+                    distance_df['zip_to'] == int(hospital_zip))]['distance'].item())
+
+            dist.append(temp)
+            index_min = min(range(len(dist)), key=dist.__getitem__)
+
+        except ValueError:  # some zip code not in distance file. this shouldn't happen in grading
+            rand_hosp = choice(feasible_hospitals)
+            print(
+                "BAD PATIENT ZIP =",
+                zipcode,
+                "PATIENT SENT TO HOSPITAL id =",
+                rand_hosp.oRecordData['id'])
+            return rand_hosp
 
     return feasible_hospitals[index_min]
-
-'''
-def findBestHospital(zipcode, feasible_hospitals):
-    distance_df = read_csv(distance_filepath)
-    dist = []
-    for hospital in feasible_hospitals:
-        hospital_zip = int(hospital.oRecordData['zipcode'])
-        temp = float(distance_df[(distance_df['zip_from'] == int(zipcode)) & (
-            distance_df['zip_to'] == int(hospital_zip))]['distance'].item())
-        dist.append(temp)
-    index_min = min(range(len(dist)), key=dist.__getitem__)
-
-    return feasible_hospitals[index_min]
-'''
 
 
 '''
