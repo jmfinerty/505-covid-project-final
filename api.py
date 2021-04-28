@@ -4,14 +4,19 @@
 
 import util
 import pyorient
-import flask
+from flask import Flask
+
 from DBLauncher import reset_db
 
-app = flask.Flask(__name__)
+app = Flask(__name__)
 
 name = "COVID-19-Report"
 login = 'root'
 password = 'rootpwd'
+
+# @app.route('/')
+# def testapi():
+#    return 'TestAPI'
 
 
 # ========================================
@@ -161,3 +166,6 @@ def OF3(id):
         "total_beds": total_beds,
         "avalable_beds": avalable_beds,
         "zipcode": zipcode}
+
+
+app.run()
