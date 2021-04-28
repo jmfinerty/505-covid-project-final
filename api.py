@@ -10,12 +10,13 @@ import multiprocessing as mp
 from flask import Flask
 from util import read_hospital_data, read_patients_data
 from DBLauncher import reset_db, load_db
-from time import time
+from time import time, sleep
 
 
 app = Flask(__name__)
 q = mp.Queue()
 
+# Database and its login
 name = "COVID-19-Report"
 login = 'root'
 password = 'rootpwd'
@@ -24,23 +25,35 @@ password = 'rootpwd'
 # def testapi():
 #    return 'TestAPI'
 
+# Record time, so state alert can update every 15s
 t1 = time()
+
+# After rabbit queue is clear, this checks the new data
+# to see if state should be considered alerted
 
 
 def update_state_alert():
     global t1
     t2 = time()
-    if t2 - t1 > 15:
+    if t2 - t1 > 15:  # if 15s have passed since last update
+        # connect to db
         client = pyorient.OrientDB("localhost", 2424)
         session_id = client.connect(login, password)
         client.db_open(name, login, password)
+
+        # get number of zip codes in alert
         num_zips_alerted = len(
             client.query("select z from zipcodes where positive_test > 2*last_test"))
+
+        # if 5+ are in alert, consider state in alert
         if num_zips_alerted >= 5:
             client.command("UPDATE zipcodes SET state_status = 1")
-        # last_test of prev. 15s window
+
+        # update last_test to represent now
         client.command("UPDATE zipcodes SET last_test = positive_test")
         client.close()
+
+        # update time this 15s window was done processing
         t1 = time()
 
 
@@ -48,7 +61,7 @@ def subscriber():
 
     username = 'student'
     password = 'student01'
-    # hostname = '128.163.202.50'
+    #hostname = '128.163.202.50'
     hostname = 'vcbumg2.cs.uky.edu'
     virtualhost = '9'
 
@@ -81,6 +94,7 @@ def subscriber():
 
     channel.basic_consume(
         queue=queue_name, on_message_callback=callback, auto_ack=True)
+
     channel.start_consuming()
 
 
@@ -124,7 +138,22 @@ def getteam():
 # E.g.:   { "reset_status_code": "1" }
 @app.route('/api/reset', methods=['GET'])
 def reset():
-    return {"reset_status_code": reset_db()}
+
+    try:
+        client = pyorient.OrientDB("localhost", 2424)
+        session_id = client.connect(login, password)
+        client.db_open(name, login, password)
+
+        # clear records in database
+        client.command("DELETE VERTEX patient")
+        client.command("DELETE VERTEX zipcodes")
+        client.command("UPDATE hospital SET avalable_beds = total_beds")
+
+        client.close()
+        return {"reset_status_code": "1"}
+
+    except BaseException:
+        return {"reset_status_code": "0"}
 
 
 # ========================================
@@ -256,7 +285,10 @@ def gethospital(id):
 
 load_db()
 read_hospital_data()
-mp.Process(target=subscriber).start()  # rabbit
-mp.Process(target=data_to_db).start()
+rabbit = mp.Process(target=subscriber)
+rabbit.start()
+datatodb = mp.Process(target=data_to_db)
+datatodb.start()
 
+# e.g.: curl http://jmfi246.cs.uky.edu:9000/api/getteams
 app.run(port=9000)
