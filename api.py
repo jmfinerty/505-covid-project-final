@@ -48,7 +48,8 @@ def subscriber():
 
     username = 'student'
     password = 'student01'
-    hostname = '128.163.202.50'
+    # hostname = '128.163.202.50'
+    hostname = 'vcbumg2.cs.uky.edu'
     virtualhost = '9'
 
     # CODE PARTIALLY SOURCED FROM EXAMPLE CODE GIVEN IN ASSIGNMENT
