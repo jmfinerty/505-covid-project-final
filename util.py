@@ -215,6 +215,7 @@ def findBestHospital(zipcode, feasible_hospitals):
                 rand_hosp.oRecordData['id'])'''
             return rand_hosp
 
+    # print(feasible_hospitals[index_min].oRecordData['id'])
     return feasible_hospitals[index_min]
 
 

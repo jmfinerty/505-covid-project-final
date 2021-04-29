@@ -225,8 +225,8 @@ def testcount():
     positive_test_count = query_positive[0].oRecordData['count']
     negative_test_count = query_negative[0].oRecordData['count']
 
-    return {"positive_test": positive_test_count,
-            "negative_test": negative_test_count}
+    return {"positive_test": str(positive_test_count),
+            "negative_test": str(negative_test_count)}
 
 
 # ========================================
