@@ -208,11 +208,11 @@ def findBestHospital(zipcode, feasible_hospitals):
 
         except ValueError:  # some zip code not in distance file. this shouldn't happen in grading
             rand_hosp = choice(feasible_hospitals)
-            print(
+            '''print(
                 "BAD PATIENT ZIP =",
                 zipcode,
                 "PATIENT SENT TO HOSPITAL id =",
-                rand_hosp.oRecordData['id'])
+                rand_hosp.oRecordData['id'])'''
             return rand_hosp
 
     return feasible_hospitals[index_min]

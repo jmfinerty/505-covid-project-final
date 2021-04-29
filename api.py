@@ -1,6 +1,8 @@
 
 # api.py
 # Functions for APIs defined in assignment
+# Note: to run in background,
+# run "python3 api.py &" instead of "python3 api.py"
 
 import pyorient
 import pika
@@ -90,7 +92,7 @@ def subscriber():
     def callback(ch, method, properties, body):
         #print(" [x] %r:%r" % (method.routing_key, body))
         q.put(json.loads(body))
-        print(json.loads(body))
+        # print(json.loads(body))
 
     channel.basic_consume(
         queue=queue_name, on_message_callback=callback, auto_ack=True)
