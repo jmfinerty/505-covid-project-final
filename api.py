@@ -127,11 +127,11 @@ def data_to_db():
 @app.route('/api/getteam', methods=['GET'])
 def getteam():
     return {
-        'team_name': 'KhanalFinerty',
-        'Team_members_sids': (
-            '12331124',
-            '12307438'),
-        'app_status_code': '0'}
+        "team_name": "Jacob and Subash",
+        "Team_members_sids": (
+            "12331124",
+            "12307438"),
+        "app_status_code": "1"}
 
 
 # /api/reset
